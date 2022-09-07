@@ -39,17 +39,30 @@ contract BigchainDB is ChainlinkClient {
         jobId = "5d82606d6dd440bea720bfad1d75516d";
         fee = 0.1 * 10 ** 18;
     }
+
+    // Helper function(s)
+
+    function getRequestIndex(bytes32 _requestId) public view returns (uint) {
+        for (uint i = 0; i < requests.length; i++) {
+            if (requests[i].requestId == _requestId) {
+                return i;
+            }
+        }
+        revert StatusError("Request not found");
+    }
+
+    // Contract functions
     
     function requestAssetSearchId(string memory _search) internal returns (bytes32) {   
         bytes32 requestId;
         uint data = 0;
 
-        Chainlink.Request memory request = buildChainlinkRequest(jobId, address(this), this.fulfillRequest.selector);
+        Chainlink.Request memory request = ChainlinkClient.buildChainlinkRequest(jobId, address(this), this.fulfillRequest.selector);
         
         request.add("get", string(abi.encodePacked("http://24.150.93.243:9984/api/v1/assets/?search=", _search, "&limit=", "1")));
         request.add("path", "0,id");
         
-        requestId = sendChainlinkRequest(request, fee);
+        requestId = ChainlinkClient.sendChainlinkRequest(request, fee);
         requests.push(Request(requestId, Status.Pending, abi.encodePacked(data)));
         return requestId;
     }
@@ -58,12 +71,12 @@ contract BigchainDB is ChainlinkClient {
         bytes32 requestId;
         uint data = 0;
 
-        Chainlink.Request memory request = buildChainlinkRequest(jobId, address(this), this.fulfillRequest.selector);
+        Chainlink.Request memory request = ChainlinkClient.buildChainlinkRequest(jobId, address(this), this.fulfillRequest.selector);
         
         request.add("get", string(abi.encodePacked("http://24.150.93.243:9984/api/v1/assets/?search=", _search, "&limit=", "1")));
         request.add("path", _path);
         
-        requestId = sendChainlinkRequest(request, fee);
+        requestId = ChainlinkClient.sendChainlinkRequest(request, fee);
         requests.push(Request(requestId, Status.Pending, abi.encodePacked(data)));
         return requestId;
     }
@@ -72,12 +85,12 @@ contract BigchainDB is ChainlinkClient {
         bytes32 requestId;
         uint data = 0;
 
-        Chainlink.Request memory request = buildChainlinkRequest(jobId, address(this), this.fulfillRequest.selector);
+        Chainlink.Request memory request = ChainlinkClient.buildChainlinkRequest(jobId, address(this), this.fulfillRequest.selector);
         
         request.add("get", string(abi.encodePacked("http://24.150.93.243:9984/api/v1/metadata/?search=", _search, "&limit=", "1")));
         request.add("path", "0,id");
         
-        requestId = sendChainlinkRequest(request, fee);
+        requestId = ChainlinkClient.sendChainlinkRequest(request, fee);
         requests.push(Request(requestId, Status.Pending, abi.encodePacked(data)));
         return requestId;
     }
@@ -86,12 +99,12 @@ contract BigchainDB is ChainlinkClient {
         bytes32 requestId;
         uint data = 0;
 
-        Chainlink.Request memory request = buildChainlinkRequest(jobId, address(this), this.fulfillRequest.selector);
+        Chainlink.Request memory request = ChainlinkClient.buildChainlinkRequest(jobId, address(this), this.fulfillRequest.selector);
         
         request.add("get", string(abi.encodePacked("http://24.150.93.243:9984/api/v1/metadata/?search=", _search, "&limit=", "1")));
         request.add("path", _path);
         
-        requestId = sendChainlinkRequest(request, fee);
+        requestId = ChainlinkClient.sendChainlinkRequest(request, fee);
         requests.push(Request(requestId, Status.Pending, abi.encodePacked(data)));
         return requestId;
     }
@@ -165,14 +178,7 @@ contract BigchainDB is ChainlinkClient {
         return requests.length;
     }
 
-    function getRequestIndex(bytes32 _requestId) public view returns (uint) {
-        for (uint i = 0; i < requests.length; i++) {
-            if (requests[i].requestId == _requestId) {
-                return i;
-            }
-        }
-        revert StatusError("Request not found");
-    }
+    
 
     // NOTE: This function is currently not supported yet.
     // function clearRequests() public {
