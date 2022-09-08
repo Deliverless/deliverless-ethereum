@@ -1,0 +1,10 @@
+{
+  "link-token-address": "0x1922A11919621aCB227B3ae52905663b9a1dBDc2",
+  "operator-address": "0xB642abE27536A1e323b7fBD2E39AA19190734B50",
+  "chainlink-address": "0x2D4A5f441D449a49df2d7ADe708b2D3603168473",
+  "job-ids": [
+    {
+      "db-search-id": "220a1cc9ca2b43b6bc6134b25568ad92"
+    }
+  ]
+}
