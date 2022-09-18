@@ -1,10 +1,10 @@
 {
-  "link-token-address": "0x1922A11919621aCB227B3ae52905663b9a1dBDc2",
-  "operator-address": "0xB642abE27536A1e323b7fBD2E39AA19190734B50",
-  "chainlink-address": "0xF6b2e4A7D62088F73A86B3D3854587D899dE4765",
+  "link-token-address": "0xA900A58279cE8Ab308fAE50A4B1fF38d8F5ee2fF",
+  "operator-address": "0x02bF4751574882b27d034Fc4F835A30103f8dfd8",
+  "chainlink-address": "0xc4a2C05045663f57cbdEFfcc4947978c66Ba009E",
   "job-ids": [
     {
-      "db-search-id": "220a1cc9-ca2b-43b6-bc61-34b25568ad92"
+      "bigchaindb": "220a1cc9-ca2b-43b6-bc61-34b25568ad92"
     }
   ]
 }

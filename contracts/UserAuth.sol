@@ -2,6 +2,7 @@
 pragma solidity ^0.8.12;
 
 import "./BigchainDB.sol";
+import "../modules/@openzeppelin/contracts/utils/Strings.sol";
 
 contract UserAuth is BigchainDB {
     using strings for *;
@@ -9,29 +10,19 @@ contract UserAuth is BigchainDB {
     constructor() BigchainDB() {
     }
 
-    function requestIsUsername(string memory _username) public returns (bytes32) {
-        return requestAssetSearchId(_username);
+    function requestIsAuth(string memory _username, string memory _password) public returns (bytes32) {
+        string memory encoded = Strings.toHexString(uint256(keccak256(abi.encodePacked(_username, _password))), 32);
+        return BigchainDB.requestFindObject("user", abi.encodePacked('{"encoded":"', encoded, '"}'), 1, "");
     }
 
-    function requestUserPassword(bytes32 _requestId) public returns (bytes32) {
-        Request memory request = BigchainDB.getRequestStatus(_requestId, BigchainDB.Status.Success);
-        string memory id = string(request.data).toSlice().substringLast(64).toString();
-        emit Log(_requestId, id);
-        return requestMetadataSearchResponse(id, "0,metadata,password");
+    function requestNewAccount(string memory _username, string memory _password) public returns (bytes32) {
+        string memory encoded = Strings.toHexString(uint256(keccak256(abi.encodePacked(_username, _password))), 32);
+        return BigchainDB.requestNewObject("user", abi.encodePacked('{"encoded":"', encoded, '"}'), "");
     }
 
-    function isUserAuth(string memory _username, string memory _password, bytes32 _usernameRequestId, bytes32 _passwordRequestId) public view returns (bool) {
-        
-        string memory usernameResult = BigchainDB.getRequestData(_usernameRequestId, _username.toSlice().len());
-        string memory passwordResult = BigchainDB.getRequestData(_passwordRequestId, _password.toSlice().len());
-
-        if (keccak256(abi.encodePacked(usernameResult)) == keccak256(abi.encodePacked(_username)) 
-        && keccak256(abi.encodePacked(passwordResult)) == keccak256(abi.encodePacked(_password))) {
-            return true;
-        } else {
-            return false;
-        }
-
+    function requestChangePassword(string memory _id, string memory _username, string memory _newPassword) public returns (bytes32) {
+        string memory encoded = Strings.toHexString(uint256(keccak256(abi.encodePacked(_username, _newPassword))), 32);
+        return BigchainDB.requestUpdateObject("user", _id, abi.encodePacked('{"encoded":"', encoded, '"}'), "");
     }
 
 }
