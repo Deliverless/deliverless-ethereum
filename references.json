@@ -1,0 +1,10 @@
+{
+  "link-token-address": "0xA900A58279cE8Ab308fAE50A4B1fF38d8F5ee2fF",
+  "operator-address": "0x02bF4751574882b27d034Fc4F835A30103f8dfd8",
+  "chainlink-address": "0xc4a2C05045663f57cbdEFfcc4947978c66Ba009E",
+  "job-ids": [
+    {
+      "bigchaindb": "220a1cc9-ca2b-43b6-bc61-34b25568ad92"
+    }
+  ]
+}

@@ -3,6 +3,7 @@ pragma solidity ^0.8.12;
 
 import "../modules/chainlink/contracts/src/v0.8/ChainlinkClient.sol";
 import "../modules/utils/strings.sol";
+import "../modules/@openzeppelin/contracts/utils/Strings.sol";
 
 contract BigchainDB is ChainlinkClient {
     using Chainlink for Chainlink.Request;
@@ -34,72 +35,101 @@ contract BigchainDB is ChainlinkClient {
     error StatusError(string message);
 
     constructor() {
-        setChainlinkToken(0x8a31544A2a4006889735B97d092FFD5bd0396B5E);
-        setChainlinkOracle(0x12803e97582646C463b631c2bb653A72Bf16f13B);
-        jobId = "5d82606d6dd440bea720bfad1d75516d";
+        setChainlinkToken(0xA900A58279cE8Ab308fAE50A4B1fF38d8F5ee2fF);
+        setChainlinkOracle(0x02bF4751574882b27d034Fc4F835A30103f8dfd8);
+        jobId = "220a1cc9ca2b43b6bc6134b25568ad92";
         fee = 0.1 * 10 ** 18;
     }
-    
-    function requestAssetSearchId(string memory _search) internal returns (bytes32) {   
-        bytes32 requestId;
-        uint data = 0;
 
-        Chainlink.Request memory request = buildChainlinkRequest(jobId, address(this), this.fulfillRequest.selector);
-        
-        request.add("get", string(abi.encodePacked("http://24.150.93.243:9984/api/v1/assets/?search=", _search, "&limit=", "1")));
-        request.add("path", "0,id");
-        
+    function requestNewObject(string memory _model, bytes memory _meta, string memory _returnAtt) public returns (bytes32) {
+        bytes32 requestId;
+        bytes memory data = "{}";
+
+        Chainlink.Request memory request = ChainlinkClient.buildChainlinkRequest(jobId, address(this), this.fulfillRequest.selector);
+        request.add("id", "");
+        request.add("method", "add");
+        request.add("model", _model);
+        request.addBytes("meta", _meta);
+        request.add("limit", "");
+        request.add("returnAtt", _returnAtt);
+
         requestId = sendChainlinkRequest(request, fee);
         requests.push(Request(requestId, Status.Pending, abi.encodePacked(data)));
         return requestId;
     }
 
-    function requestAssetSearchResponse(string memory _search, string memory _path) internal returns (bytes32) {   
+    function requestGetObject(string memory _model, string memory _id, string memory _returnAtt) public returns (bytes32) {
         bytes32 requestId;
-        uint data = 0;
+        bytes memory data = "{}";
 
-        Chainlink.Request memory request = buildChainlinkRequest(jobId, address(this), this.fulfillRequest.selector);
-        
-        request.add("get", string(abi.encodePacked("http://24.150.93.243:9984/api/v1/assets/?search=", _search, "&limit=", "1")));
-        request.add("path", _path);
-        
+        Chainlink.Request memory request = ChainlinkClient.buildChainlinkRequest(jobId, address(this), this.fulfillRequest.selector);
+        request.add("id", _id);
+        request.add("method", "get");
+        request.add("model", _model);
+        request.addBytes("meta", "{}");
+        request.add("limit", "");
+        request.add("returnAtt", _returnAtt);
+
         requestId = sendChainlinkRequest(request, fee);
         requests.push(Request(requestId, Status.Pending, abi.encodePacked(data)));
         return requestId;
     }
 
-    function requestMetadataSearchId(string memory _search) internal returns (bytes32) {
+    function requestFindObject(string memory _model, bytes memory _meta, uint256 _limit, string memory _returnAtt) public returns (bytes32) {
         bytes32 requestId;
-        uint data = 0;
+        bytes memory data = "{}";
 
-        Chainlink.Request memory request = buildChainlinkRequest(jobId, address(this), this.fulfillRequest.selector);
-        
-        request.add("get", string(abi.encodePacked("http://24.150.93.243:9984/api/v1/metadata/?search=", _search, "&limit=", "1")));
-        request.add("path", "0,id");
-        
+        Chainlink.Request memory request = ChainlinkClient.buildChainlinkRequest(jobId, address(this), this.fulfillRequest.selector);
+        request.add("id", "");
+        request.add("method", "find");
+        request.add("model", _model);
+        request.addBytes("meta", _meta);
+        request.addUint("limit", _limit);
+        request.add("returnAtt", _returnAtt);
+
         requestId = sendChainlinkRequest(request, fee);
         requests.push(Request(requestId, Status.Pending, abi.encodePacked(data)));
         return requestId;
     }
 
-    function requestMetadataSearchResponse(string memory _search, string memory _path) internal returns (bytes32) {   
+    function requestUpdateObject(string memory _model, string memory _id,  bytes memory _meta, string memory _returnAtt) public returns (bytes32) {
         bytes32 requestId;
-        uint data = 0;
+        bytes memory data = "{}";
 
-        Chainlink.Request memory request = buildChainlinkRequest(jobId, address(this), this.fulfillRequest.selector);
-        
-        request.add("get", string(abi.encodePacked("http://24.150.93.243:9984/api/v1/metadata/?search=", _search, "&limit=", "1")));
-        request.add("path", _path);
-        
+        Chainlink.Request memory request = ChainlinkClient.buildChainlinkRequest(jobId, address(this), this.fulfillRequest.selector);
+        request.add("id", _id);
+        request.add("method", "update");
+        request.add("model", _model);
+        request.addBytes("meta", _meta);
+        request.add("limit", "");
+        request.add("returnAtt", _returnAtt);
+
         requestId = sendChainlinkRequest(request, fee);
         requests.push(Request(requestId, Status.Pending, abi.encodePacked(data)));
         return requestId;
     }
 
-    function fulfillRequest(bytes32 _requestId, bytes memory _data) public recordChainlinkFulfillment(_requestId) {
-        uint index = getRequestIndex(_requestId);
+    function requestBurnObject(string memory _model, string memory _id) public returns (bytes32) {
+        bytes32 requestId;
+        bytes memory data = "{}";
+
+        Chainlink.Request memory request = ChainlinkClient.buildChainlinkRequest(jobId, address(this), this.fulfillRequest.selector);
+        request.add("id", _id);
+        request.add("method", "delete");
+        request.add("model", _model);
+        request.addBytes("meta", "{}");
+        request.add("limit", "");
+        request.add("returnAtt", "");
+
+        requestId = sendChainlinkRequest(request, fee);
+        requests.push(Request(requestId, Status.Pending, abi.encodePacked(data)));
+        return requestId;
+    }
+
+    function fulfillRequest(bytes32 requestId, bytes memory data) public recordChainlinkFulfillment(requestId) {
+        uint index = getRequestIndex(requestId);
         requests[index].status = Status.Success;
-        requests[index].data = _data;
+        requests[index].data = data;
     }
 
     function getRequestData(bytes32 _requestId) public view returns (string memory) {
