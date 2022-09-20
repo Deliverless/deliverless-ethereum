@@ -35,15 +35,17 @@ contract BigchainDB is ChainlinkClient {
     error StatusError(string message);
 
     constructor() {
-        setChainlinkToken(0xA900A58279cE8Ab308fAE50A4B1fF38d8F5ee2fF);
-        setChainlinkOracle(0x02bF4751574882b27d034Fc4F835A30103f8dfd8);
+        setChainlinkToken(0x2a14911610Fe49bCaB2f6998dc1eF2bC6DbfA80e);
+        setChainlinkOracle(0x85D8ec63ECb5C037dAFb1fB87A81398805baCAbD);
         jobId = "220a1cc9ca2b43b6bc6134b25568ad92";
         fee = 0.1 * 10 ** 18;
     }
 
-    function requestNewObject(string memory _model, bytes memory _meta, string memory _returnAtt) public returns (bytes32) {
+    function requestTest(string memory _model, bytes memory _meta, string memory _returnAtt) internal returns (bytes32) {
         bytes32 requestId;
         bytes memory data = "{}";
+
+        uint256 lastRun;
 
         Chainlink.Request memory request = ChainlinkClient.buildChainlinkRequest(jobId, address(this), this.fulfillRequest.selector);
         request.add("id", "");
@@ -54,11 +56,43 @@ contract BigchainDB is ChainlinkClient {
         request.add("returnAtt", _returnAtt);
 
         requestId = sendChainlinkRequest(request, fee);
+        lastRun = block.timestamp;
+
+        while ((block.timestamp - lastRun) < 30 seconds && StringUtils.equal("{}", string(data))) {
+            requests.push(Request(requestId, Status.Pending, abi.encodePacked("{0}")));
+            return requestId;
+        }
+
         requests.push(Request(requestId, Status.Pending, abi.encodePacked(data)));
         return requestId;
     }
 
-    function requestGetObject(string memory _model, string memory _id, string memory _returnAtt) public returns (bytes32) {
+    function requestNewObject(string memory _model, bytes memory _meta, string memory _returnAtt) internal returns (bytes32) {
+        bytes32 requestId;
+        bytes memory data = "{}";
+
+        uint256 lastRun;
+
+        Chainlink.Request memory request = ChainlinkClient.buildChainlinkRequest(jobId, address(this), this.fulfillRequest.selector);
+        request.add("id", "");
+        request.add("method", "add");
+        request.add("model", _model);
+        request.addBytes("meta", _meta);
+        request.add("limit", "");
+        request.add("returnAtt", _returnAtt);
+
+        requestId = sendChainlinkRequest(request, fee);
+        lastRun = block.timestamp;
+
+        while ((block.timestamp - lastRun) < 30 seconds && StringUtils.equal("{}", string(data))) {
+            data = "{}";
+        }
+
+        requests.push(Request(requestId, Status.Pending, abi.encodePacked(data)));
+        return requestId;
+    }
+
+    function requestGetObject(string memory _model, string memory _id, string memory _returnAtt) internal returns (bytes32) {
         bytes32 requestId;
         bytes memory data = "{}";
 
@@ -75,7 +109,7 @@ contract BigchainDB is ChainlinkClient {
         return requestId;
     }
 
-    function requestFindObject(string memory _model, bytes memory _meta, uint256 _limit, string memory _returnAtt) public returns (bytes32) {
+    function requestFindObject(string memory _model, bytes memory _meta, uint256 _limit, string memory _returnAtt) internal returns (bytes32) {
         bytes32 requestId;
         bytes memory data = "{}";
 
@@ -92,7 +126,7 @@ contract BigchainDB is ChainlinkClient {
         return requestId;
     }
 
-    function requestUpdateObject(string memory _model, string memory _id,  bytes memory _meta, string memory _returnAtt) public returns (bytes32) {
+    function requestUpdateObject(string memory _model, string memory _id,  bytes memory _meta, string memory _returnAtt) internal returns (bytes32) {
         bytes32 requestId;
         bytes memory data = "{}";
 
@@ -109,7 +143,7 @@ contract BigchainDB is ChainlinkClient {
         return requestId;
     }
 
-    function requestBurnObject(string memory _model, string memory _id) public returns (bytes32) {
+    function requestBurnObject(string memory _model, string memory _id) internal returns (bytes32) {
         bytes32 requestId;
         bytes memory data = "{}";
 
@@ -137,7 +171,7 @@ contract BigchainDB is ChainlinkClient {
         return string(requests[index].data);
     }
 
-    function getRequestData(bytes32 _requestId, uint _length) public view returns (string memory) {
+    function getRequestData(bytes32 _requestId, uint _length) internal view returns (string memory) {
         uint index = getRequestIndex(_requestId);
         return string(requests[index].data).toSlice().substringLast(_length).toString();
     }
