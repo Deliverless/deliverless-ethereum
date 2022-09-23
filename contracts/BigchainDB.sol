@@ -9,7 +9,12 @@ contract BigchainDB is ChainlinkClient {
     using Chainlink for Chainlink.Request;
     using strings for *;
 
-    event Log(bytes32 requestId, string message);
+    event RequestEvent (
+        bytes32 id,
+        string typeRequest,
+        string data,
+        string message
+    );
 
     enum Status {
         Pending,
@@ -28,9 +33,6 @@ contract BigchainDB is ChainlinkClient {
 
     bytes32 private jobId;
     uint256 private fee;
-    
-    // string internal assestId;
-    // string internal metadataId;
 
     error StatusError(string message);
 
@@ -41,58 +43,25 @@ contract BigchainDB is ChainlinkClient {
         fee = 0.1 * 10 ** 18;
     }
 
-    function requestTest(string memory _model, bytes memory _meta, string memory _returnAtt) internal returns (bytes32) {
+    function requestNewObject(string memory _model, string memory _meta, string memory _returnAtt) public returns (bytes32) {
         bytes32 requestId;
         bytes memory data = "{}";
-
-        uint256 lastRun;
+        bytes memory metaBytes = abi.encodePacked(_meta);
 
         Chainlink.Request memory request = ChainlinkClient.buildChainlinkRequest(jobId, address(this), this.fulfillRequest.selector);
         request.add("id", "");
         request.add("method", "add");
         request.add("model", _model);
-        request.addBytes("meta", _meta);
+        request.addBytes("meta", metaBytes);
         request.add("limit", "");
         request.add("returnAtt", _returnAtt);
 
         requestId = sendChainlinkRequest(request, fee);
-        lastRun = block.timestamp;
-
-        while ((block.timestamp - lastRun) < 30 seconds && StringUtils.equal("{}", string(data))) {
-            requests.push(Request(requestId, Status.Pending, abi.encodePacked("{0}")));
-            return requestId;
-        }
-
-        requests.push(Request(requestId, Status.Pending, abi.encodePacked(data)));
+        requests.push(Request(requestId, Status.Pending, data));
         return requestId;
     }
 
-    function requestNewObject(string memory _model, bytes memory _meta, string memory _returnAtt) internal returns (bytes32) {
-        bytes32 requestId;
-        bytes memory data = "{}";
-
-        uint256 lastRun;
-
-        Chainlink.Request memory request = ChainlinkClient.buildChainlinkRequest(jobId, address(this), this.fulfillRequest.selector);
-        request.add("id", "");
-        request.add("method", "add");
-        request.add("model", _model);
-        request.addBytes("meta", _meta);
-        request.add("limit", "");
-        request.add("returnAtt", _returnAtt);
-
-        requestId = sendChainlinkRequest(request, fee);
-        lastRun = block.timestamp;
-
-        while ((block.timestamp - lastRun) < 30 seconds && StringUtils.equal("{}", string(data))) {
-            data = "{}";
-        }
-
-        requests.push(Request(requestId, Status.Pending, abi.encodePacked(data)));
-        return requestId;
-    }
-
-    function requestGetObject(string memory _model, string memory _id, string memory _returnAtt) internal returns (bytes32) {
+    function requestGetObject(string memory _model, string memory _id, string memory _returnAtt) public returns (bytes32) {
         bytes32 requestId;
         bytes memory data = "{}";
 
@@ -105,45 +74,47 @@ contract BigchainDB is ChainlinkClient {
         request.add("returnAtt", _returnAtt);
 
         requestId = sendChainlinkRequest(request, fee);
-        requests.push(Request(requestId, Status.Pending, abi.encodePacked(data)));
+        requests.push(Request(requestId, Status.Pending, data));
         return requestId;
     }
 
-    function requestFindObject(string memory _model, bytes memory _meta, uint256 _limit, string memory _returnAtt) internal returns (bytes32) {
+    function requestFindObject(string memory _model, string memory _meta, uint256 _limit, string memory _returnAtt) public returns (bytes32) {
         bytes32 requestId;
         bytes memory data = "{}";
+        bytes memory metaBytes = abi.encodePacked(_meta);
 
         Chainlink.Request memory request = ChainlinkClient.buildChainlinkRequest(jobId, address(this), this.fulfillRequest.selector);
         request.add("id", "");
         request.add("method", "find");
         request.add("model", _model);
-        request.addBytes("meta", _meta);
+        request.addBytes("meta", metaBytes);
         request.addUint("limit", _limit);
         request.add("returnAtt", _returnAtt);
 
         requestId = sendChainlinkRequest(request, fee);
-        requests.push(Request(requestId, Status.Pending, abi.encodePacked(data)));
+        requests.push(Request(requestId, Status.Pending, data));
         return requestId;
     }
 
-    function requestUpdateObject(string memory _model, string memory _id,  bytes memory _meta, string memory _returnAtt) internal returns (bytes32) {
+    function requestAppendObject(string memory _model, string memory _id,  string memory _meta, string memory _returnAtt) public returns (bytes32) {
         bytes32 requestId;
         bytes memory data = "{}";
+        bytes memory metaBytes = abi.encodePacked(_meta);
 
         Chainlink.Request memory request = ChainlinkClient.buildChainlinkRequest(jobId, address(this), this.fulfillRequest.selector);
         request.add("id", _id);
         request.add("method", "update");
         request.add("model", _model);
-        request.addBytes("meta", _meta);
+        request.addBytes("meta", metaBytes);
         request.add("limit", "");
         request.add("returnAtt", _returnAtt);
 
         requestId = sendChainlinkRequest(request, fee);
-        requests.push(Request(requestId, Status.Pending, abi.encodePacked(data)));
+        requests.push(Request(requestId, Status.Pending, data));
         return requestId;
     }
 
-    function requestBurnObject(string memory _model, string memory _id) internal returns (bytes32) {
+    function requestBurnObject(string memory _model, string memory _id) public returns (bytes32) {
         bytes32 requestId;
         bytes memory data = "{}";
 
@@ -156,23 +127,39 @@ contract BigchainDB is ChainlinkClient {
         request.add("returnAtt", "");
 
         requestId = sendChainlinkRequest(request, fee);
-        requests.push(Request(requestId, Status.Pending, abi.encodePacked(data)));
+        requests.push(Request(requestId, Status.Pending, data));
         return requestId;
     }
 
     function fulfillRequest(bytes32 requestId, bytes memory data) public recordChainlinkFulfillment(requestId) {
-        uint index = getRequestIndex(requestId);
-        requests[index].status = Status.Success;
+        uint256 index = findRequestIndex(requestId);
         requests[index].data = data;
+        requests[index].status = Status.Success;
+
+        emit RequestEvent(requestId, "fulfill", bytesToString(data), "Request fulfilled");
+    }
+
+    function getStatusId(Status _status) internal pure returns (uint8) {
+        if (_status == Status.Pending) {
+            return uint8(1);
+        } else if (_status == Status.Success) {
+            return uint8(2);
+        } else if (_status == Status.Failed) {
+            return uint8(3);
+        } else if (_status == Status.Idling) {
+            return uint8(4);
+        } else {
+            revert StatusError("Invalid status");
+        }
     }
 
     function getRequestData(bytes32 _requestId) public view returns (string memory) {
-        uint index = getRequestIndex(_requestId);
+        uint index = findRequestIndex(_requestId);
         return string(requests[index].data);
     }
 
     function getRequestData(bytes32 _requestId, uint _length) internal view returns (string memory) {
-        uint index = getRequestIndex(_requestId);
+        uint index = findRequestIndex(_requestId);
         return string(requests[index].data).toSlice().substringLast(_length).toString();
     }
     
@@ -205,19 +192,19 @@ contract BigchainDB is ChainlinkClient {
 
         Request memory request = getRequest(_requestId);
         if (request.status == Status.Pending) {
-            return "Pending";
+            return "pending";
         } else if (request.status == Status.Success) {
-            return "Success";
+            return "success";
         } else if (request.status == Status.Failed) {
-            return "Failed";
+            return "failed";
         } else if (request.status == Status.Idling) {
-            return "Idling";
+            return "idle";
         }
         revert StatusError("Request not found");
     }
 
     function cancelRequest(bytes32 _requestId) public returns (bool) {
-        uint index = getRequestIndex(_requestId);
+        uint index = findRequestIndex(_requestId);
         if (requests[index].status == Status.Pending) {
             requests[index].status = Status.Failed;
             return true;
@@ -229,7 +216,7 @@ contract BigchainDB is ChainlinkClient {
         return requests.length;
     }
 
-    function getRequestIndex(bytes32 _requestId) public view returns (uint) {
+    function findRequestIndex(bytes32 _requestId) public view returns (uint) {
         for (uint i = 0; i < requests.length; i++) {
             if (requests[i].requestId == _requestId) {
                 return i;
@@ -238,9 +225,38 @@ contract BigchainDB is ChainlinkClient {
         revert StatusError("Request not found");
     }
 
-    // NOTE: This function is currently not supported yet.
-    // function clearRequests() public {
-    //     requests = new Request[](0);
+    // Helper functions
+
+    function bytesToString(bytes memory _bytes) internal pure returns (string memory) {
+        bytes memory bytesArray = new bytes(_bytes.length);
+        for (uint256 i = 0; i < _bytes.length; i++) {
+            bytesArray[i] = _bytes[i];
+        }
+        return string(bytesArray);
+    }
+
+    // function testMemory() public {
+    //     bytes memory var1 = "hello world";
+    //     bytes memory var2;
+    //     assembly {
+    //         let ptr := mload(0x40)
+    //         mstore(add(ptr, 0x00), var1)
+    //         var2 := mload(add(ptr, 0x00))
+    //     }
+
+    //     emit LogBytes(var1, "Variable prefixed with 'hello world'");
+    //     emit LogBytes(var2, "Copied variable prefixed with 'hello world'");
+
+    //     emitLog();
+    // }
+
+    // function emitLog() public {
+    //     bytes memory data;
+    //     assembly {
+    //         let ptr := mload(0x40)
+    //         data := mload(add(ptr, 0x20))
+    //     }
+    //     emit LogBytes(data, "Copied variable prefixed with 'hello world' outside function");
     // }
 
 }
