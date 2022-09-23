@@ -199,7 +199,7 @@ contract Operator is AuthorizedReceiver, ConfirmedOwner, LinkTokenReceiver, Oper
    * @param data The data to return to the consuming contract
    * @return Status if the external call was successful
    */
-  function fulfillOracleR equest2(
+  function fulfillOracleRequest2(
     bytes32 requestId,
     uint256 payment,
     address callbackAddress,
